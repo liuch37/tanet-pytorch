@@ -1,2 +1,2 @@
-# tanet-pytorch
+# TANet
 The official implementation of the idea texture-based attention network (TANET) with PyTorch.
