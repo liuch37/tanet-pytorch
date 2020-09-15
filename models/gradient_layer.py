@@ -23,6 +23,10 @@ class cgradient(nn.Module):
         self.conv2d = F.conv2d
 
     def forward(self, imgs):
+        '''
+        imgs: size [batch, 3, H, W]
+        output: size [batch, 1, H, W]
+        '''
         gxx = self.conv2d(imgs, self.weight_x, stride=1, padding=1, groups=3)
         gxx = torch.sum(gxx**2, axis=1)
         gyy = self.conv2d(imgs, self.weight_y, stride=1, padding=1, groups=3)
