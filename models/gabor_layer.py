@@ -61,7 +61,7 @@ def kernel_normalization(kernel):
     return kernel / factor
 
 class gabor_layer(nn.Module):
-    def __init__(self, in_planes, out_planes, kernel_size=3):
+    def __init__(self, out_planes, kernel_size=3):
         super(gabor_layer, self).__init__()
         self.pi = torch.acos(torch.zeros(1)).item() * 2
         self.conv2d_h = F.conv2d
@@ -77,13 +77,19 @@ class gabor_layer(nn.Module):
         self.kernel_vertical = getGaborKernel(kernel_size, self.sigma, self.theta_v, self.lambd, self.gamma, self.psi)
         self.kernel_vertical_normalized = kernel_normalization(self.kernel_vertical)
 
-        self.kernel_weight_horizontal = self.kernel_horizontal_normalized.unsqueeze(0).unsqueeze(0).repeat(out_planes,in_planes,1,1)
-        self.kernel_weight_vertical = self.kernel_vertical_normalized.unsqueeze(0).unsqueeze(0).repeat(out_planes,in_planes,1,1)
+        self.kernel_weight_horizontal = self.kernel_horizontal_normalized.unsqueeze(0).unsqueeze(0).repeat(1,out_planes,1,1)
+        self.kernel_weight_vertical = self.kernel_vertical_normalized.unsqueeze(0).unsqueeze(0).repeat(1,out_planes,1,1)
 
     def forward(self, imgs):
+        '''
+        imgs should be in channel order B,G,R - by assuming cv2.imread is used: size [batch, 3, H, W]
+        gray = 0.299 R + 0.587 G + 0.114 B
+        output imgs: size [batch, 1, H, W]
+        '''
+        imgs_gray = 0.114 * imgs[:,0:1,:,:] + 0.587 * imgs[:,1:2,:,:] + 0.299 * imgs[:,2:3,:,:]
         # Gabor convolution
-        imgs_h = self.conv2d_h(imgs, self.kernel_weight_horizontal, stride=1, padding=1)
-        imgs_v = self.conv2d_v(imgs, self.kernel_weight_vertical, stride=1, padding=1)
+        imgs_h = self.conv2d_h(imgs_gray, self.kernel_weight_horizontal, stride=1, padding=1)
+        imgs_v = self.conv2d_v(imgs_gray, self.kernel_weight_vertical, stride=1, padding=1)
 
         return torch.sqrt(imgs_h**2 + imgs_v**2)
 
@@ -93,10 +99,10 @@ if __name__ == '__main__':
     batch_size = 8
     Height = 32
     Width = 64
-    Channel = 1
+    Channel = 3
     with torch.autograd.set_detect_anomaly(True):
         input_images = torch.randn(batch_size,Channel,Height,Width)
-        gabor = gabor_layer(Channel, 1, kernel_size=3)
+        gabor = gabor_layer(1, kernel_size=3)
         print("Parameters before back propagation:", gabor.sigma, gabor.theta_h, gabor.theta_v, gabor.lambd, gabor.gamma, gabor.psi)
         input_filtered_images = gabor(input_images)
         print(input_filtered_images)
@@ -113,10 +119,10 @@ if __name__ == '__main__':
     # real input image
     test_image_path = '../../sar-pytorch/IIIT5K/test/1_1.png'
     img = cv2.imread(test_image_path)
-    img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    img_gray = img_gray / 255
-    imgs = torch.FloatTensor(img_gray)
-    imgs = imgs.unsqueeze(0).unsqueeze(0)
+    img = img / 255
+    imgs = torch.FloatTensor(img)
+    imgs = imgs.permute(2,0,1)
+    imgs = imgs.unsqueeze(0)
     imgs_filtered = gabor(imgs)
     imgs_filtered_numpy = imgs_filtered[0,0,:,:].detach().numpy()
     plt.imshow(imgs_filtered_numpy, cmap='gray')
