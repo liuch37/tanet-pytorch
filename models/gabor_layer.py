@@ -63,6 +63,7 @@ def kernel_normalization(kernel):
 class gabor_layer(nn.Module):
     def __init__(self, out_planes, kernel_size=3):
         super(gabor_layer, self).__init__()
+        self.padding = (kernel_size-1)//2
         self.pi = torch.acos(torch.zeros(1)).item() * 2
         self.conv2d_h = F.conv2d
         self.conv2d_v = F.conv2d
@@ -88,8 +89,8 @@ class gabor_layer(nn.Module):
         '''
         imgs_gray = 0.114 * imgs[:,0:1,:,:] + 0.587 * imgs[:,1:2,:,:] + 0.299 * imgs[:,2:3,:,:]
         # Gabor convolution
-        imgs_h = self.conv2d_h(imgs_gray, self.kernel_weight_horizontal, stride=1, padding=1)
-        imgs_v = self.conv2d_v(imgs_gray, self.kernel_weight_vertical, stride=1, padding=1)
+        imgs_h = self.conv2d_h(imgs_gray, self.kernel_weight_horizontal, stride=1, padding=self.padding)
+        imgs_v = self.conv2d_v(imgs_gray, self.kernel_weight_vertical, stride=1, padding=self.padding)
 
         return torch.sqrt(imgs_h**2 + imgs_v**2)
 
