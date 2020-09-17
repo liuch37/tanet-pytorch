@@ -6,4 +6,4 @@ The official implementation of Texture-Aware Attention Network (TANet) with PyTo
 - [x] Color-Gradient layer
 - [x] Gabor layer
 - [x] Attention layer
-- [ ] Integrated TANet model
+- [ ] TANet model
