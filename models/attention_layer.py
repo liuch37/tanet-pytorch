@@ -8,25 +8,26 @@ import torch.nn as nn
 __all__ = ['attention_layer']
 
 class attention_layer(nn.Module):
-    def __init__(self, in_dim):
+    def __init__(self, in_dim, texture_dim):
         super(attention_layer, self).__init__()
-        self.query_conv = nn.Conv2d(in_channels=in_dim, out_channels=in_dim//8 , kernel_size=1)
+        self.query_conv = nn.Conv2d(in_channels=texture_dim, out_channels=in_dim//8 , kernel_size=1)
         self.key_conv = nn.Conv2d(in_channels=in_dim, out_channels=in_dim//8 , kernel_size=1)
         self.value_conv = nn.Conv2d(in_channels=in_dim, out_channels=in_dim, kernel_size=1)
         self.final_conv = nn.Conv2d(in_channels=in_dim, out_channels=in_dim, kernel_size=1)
         self.softmax  = nn.Softmax(dim=-1)
         self.gamma = nn.Parameter(torch.zeros(1))
 
-    def forward(self, x):
+    def forward(self, x, z):
         '''
         input:
-        x: feature maps (batch, C, W, H)
+        x: feature maps (batch, C_in, W, H)
+        z: texture images (batch, C_texture, W, H)
         output:
-        out: gamma*attention value + input feature maps
+        out: gamma*attention value + input feature maps (batch, C_in, W, H)
         attention: (batch, N, N), N=W*H
         '''
         batch, C, W ,H = x.size()
-        proj_query  = self.query_conv(x).view(batch,-1,W*H).permute(0,2,1) # (batch, C, N) -> (batch, N, C)
+        proj_query  = self.query_conv(z).view(batch,-1,W*H).permute(0,2,1) # (batch, C, N) -> (batch, N, C)
         proj_key =  self.key_conv(x).view(batch,-1,W*H) # (batch, C, N)
         energy =  torch.bmm(proj_query,proj_key) # batch matrix by matrix multiplication
         attention = self.softmax(energy) # (batch, N, N) 
@@ -46,10 +47,12 @@ if __name__ == '__main__':
     Height = 24
     Width = 32
     Channel = 128
+    texture_dim = 1
 
     features = torch.randn(batch_size,Channel,Height,Width)
-    attn_layer = attention_layer(Channel)
-    new_features, att_map = attn_layer(features)
+    texture_image = torch.randn(batch_size, texture_dim, Height, Width)
+    attn_layer = attention_layer(Channel, texture_dim)
+    new_features, att_map = attn_layer(features, texture_image)
     print(new_features)
     print("shape of new feature map is:", new_features.shape)
     print("shape of attention map is:", att_map.shape)
