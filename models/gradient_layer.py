@@ -13,13 +13,13 @@ import pdb
 __all__ = ['cgradient']
 
 class cgradient(nn.Module):
-    def __init__(self, out_planes, kernel_size=3):
+    def __init__(self, in_planes, kernel_size=3):
         super(cgradient, self).__init__()
         self.eps = 10**(-12)
         self.sobel_x = torch.Tensor([[-3.0, 0.0, 3.0],[-10.0, 0.0, 10.0],[-3.0, 0.0, 3.0]])
         self.sobel_y = torch.Tensor([[-3.0, -10.0, -3.0],[0.0, 0.0, 0.0],[3.0, 10.0, 3.0]])
-        self.weight_x = self.sobel_x.unsqueeze(0).unsqueeze(0).repeat(out_planes,1,1,1)
-        self.weight_y = self.sobel_y.unsqueeze(0).unsqueeze(0).repeat(out_planes,1,1,1)
+        self.weight_x = self.sobel_x.unsqueeze(0).unsqueeze(0).repeat(in_planes,1,1,1)
+        self.weight_y = self.sobel_y.unsqueeze(0).unsqueeze(0).repeat(in_planes,1,1,1)
         self.conv2d = F.conv2d
 
     def forward(self, imgs):
