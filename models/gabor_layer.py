@@ -83,11 +83,11 @@ class gabor_layer(nn.Module):
 
     def forward(self, imgs):
         '''
-        imgs should be in channel order B,G,R - by assuming cv2.imread is used: size [batch, 3, H, W]
+        imgs should be in channel order R,G,B - size [batch, 3, H, W]
         gray = 0.299 R + 0.587 G + 0.114 B
         output imgs: size [batch, 1, H, W]
         '''
-        imgs_gray = 0.114 * imgs[:,0:1,:,:] + 0.587 * imgs[:,1:2,:,:] + 0.299 * imgs[:,2:3,:,:]
+        imgs_gray = 0.299 * imgs[:,0:1,:,:] + 0.587 * imgs[:,1:2,:,:] + 0.114 * imgs[:,2:3,:,:]
         # Gabor convolution
         imgs_h = self.conv2d_h(imgs_gray, self.kernel_weight_horizontal, stride=1, padding=self.padding)
         imgs_v = self.conv2d_v(imgs_gray, self.kernel_weight_vertical, stride=1, padding=self.padding)
@@ -120,6 +120,7 @@ if __name__ == '__main__':
     # real input image
     test_image_path = '../../sar-pytorch/IIIT5K/test/1_1.png'
     img = cv2.imread(test_image_path)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     img = img / 255
     imgs = torch.FloatTensor(img)
     imgs = imgs.permute(2,0,1)
