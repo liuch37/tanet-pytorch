@@ -13,9 +13,10 @@ import pdb
 __all__ = ['cgradient']
 
 class cgradient(nn.Module):
-    def __init__(self, in_planes, kernel_size=3):
+    def __init__(self, in_planes=3, kernel_size=3):
         super(cgradient, self).__init__()
         self.eps = 10**(-12)
+        self.in_planes = in_planes
         self.sobel_x = torch.Tensor([[-3.0, 0.0, 3.0],[-10.0, 0.0, 10.0],[-3.0, 0.0, 3.0]])
         self.sobel_y = torch.Tensor([[-3.0, -10.0, -3.0],[0.0, 0.0, 0.0],[3.0, 10.0, 3.0]])
         self.weight_x = self.sobel_x.unsqueeze(0).unsqueeze(0).repeat(in_planes,1,1,1)
@@ -27,11 +28,11 @@ class cgradient(nn.Module):
         imgs: size [batch, 3, H, W]
         output: size [batch, 1, H, W]
         '''
-        gxx = self.conv2d(imgs, self.weight_x, stride=1, padding=1, groups=3)
+        gxx = self.conv2d(imgs, self.weight_x, stride=1, padding=1, groups=self.in_planes)
         gxx = torch.sum(gxx**2, axis=1)
-        gyy = self.conv2d(imgs, self.weight_y, stride=1, padding=1, groups=3)
+        gyy = self.conv2d(imgs, self.weight_y, stride=1, padding=1, groups=self.in_planes)
         gyy = torch.sum(gyy**2, axis=1)
-        gxy = self.conv2d(imgs, self.weight_x, stride=1, padding=1, groups=3)*self.conv2d(imgs, self.weight_y, stride=1, padding=1, groups=3)
+        gxy = self.conv2d(imgs, self.weight_x, stride=1, padding=1, groups=self.in_planes)*self.conv2d(imgs, self.weight_y, stride=1, padding=1, groups=self.in_planes)
         gxy = torch.sum(gxy, axis=1)
         
         theta = 0.5*torch.atan(torch.true_divide(2*gxx, gxx-gyy+self.eps)) # color gradient orientation
