@@ -28,3 +28,6 @@ Run the below script
 ```
 python example.py
 ```
+
+## Source
+1. Test image from IIIT5K dataset: https://github.com/ocr-algorithm-and-data/IIIT5K/tree/master/test
