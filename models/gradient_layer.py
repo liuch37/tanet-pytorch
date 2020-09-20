@@ -57,7 +57,7 @@ if __name__ == '__main__':
     print(input_filtered_images.shape)
     print(input_filtered_images.requires_grad)
     # real input image
-    test_image_path = '../../sar-pytorch/IIIT5K/test/1_1.png'
+    test_image_path = '../misc/1_1.png'
     img = cv2.imread(test_image_path)
     img_color = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     img_color = img_color / 255
