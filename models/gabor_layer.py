@@ -118,7 +118,7 @@ if __name__ == '__main__':
         print("Parameters after back propagation:", gabor.sigma, gabor.theta_h, gabor.theta_v, gabor.lambd, gabor.gamma, gabor.psi)
 
     # real input image
-    test_image_path = '../../sar-pytorch/IIIT5K/test/1_1.png'
+    test_image_path = '../misc/1_1.png'
     img = cv2.imread(test_image_path)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     img = img / 255
