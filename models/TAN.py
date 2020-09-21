@@ -6,6 +6,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.parameter import Parameter
+from torch.nn import ParameterList
 from .gradient_layer import cgradient
 from .gabor_layer import gabor_layer
 from .attention_layer import attention_layer
@@ -21,9 +22,9 @@ class TANet(nn.Module):
         '''
         super(TANet, self).__init__()
         self.gradient_layer = cgradient(C_in, kernel_size=3)
-        self.gabor_layers = [gabor_layer(1, kernel_size=k) for k in kernel_sizes]
+        self.gabor_layers = nn.Sequential(*[gabor_layer(1, kernel_size=k) for k in kernel_sizes])
         self.attention_layer = attention_layer(f_in, 1)
-        self.alphas = [Parameter(torch.Tensor([1.0/len(kernel_sizes)])) for i in range(len(kernel_sizes))]
+        self.alphas = ParameterList([Parameter((torch.Tensor([1.0/len(kernel_sizes)]))) for i in range(len(kernel_sizes))])
         self.kernel_sizes = kernel_sizes
 
     def forward(self, feature_map, img):
@@ -65,6 +66,7 @@ if __name__ == '__main__':
     print(model.gabor_layers[0].sigma)
     print(model.alphas[0])
     print(model.alphas[1])
+    print(model.gradient_layer.weight_x)
     print("Input feature map size is:", features.shape)
     print("Input image size is:", input_images.shape)
     print("Outout feature map size is:", features_attn.shape)
