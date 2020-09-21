@@ -5,6 +5,7 @@ This model is to build color gradient layer.
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.nn.parameter import Parameter
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
@@ -19,8 +20,8 @@ class cgradient(nn.Module):
         self.in_planes = in_planes
         self.sobel_x = torch.Tensor([[-3.0, 0.0, 3.0],[-10.0, 0.0, 10.0],[-3.0, 0.0, 3.0]])
         self.sobel_y = torch.Tensor([[-3.0, -10.0, -3.0],[0.0, 0.0, 0.0],[3.0, 10.0, 3.0]])
-        self.weight_x = self.sobel_x.unsqueeze(0).unsqueeze(0).repeat(in_planes,1,1,1)
-        self.weight_y = self.sobel_y.unsqueeze(0).unsqueeze(0).repeat(in_planes,1,1,1)
+        self.weight_x = Parameter(self.sobel_x.unsqueeze(0).unsqueeze(0).repeat(in_planes,1,1,1), requires_grad=False)
+        self.weight_y = Parameter(self.sobel_y.unsqueeze(0).unsqueeze(0).repeat(in_planes,1,1,1), requires_grad=False)
         self.conv2d = F.conv2d
 
     def forward(self, imgs):
