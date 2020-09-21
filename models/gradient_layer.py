@@ -36,7 +36,7 @@ class cgradient(nn.Module):
         gxy = self.conv2d(imgs, self.weight_x, stride=1, padding=1, groups=self.in_planes)*self.conv2d(imgs, self.weight_y, stride=1, padding=1, groups=self.in_planes)
         gxy = torch.sum(gxy, axis=1)
         
-        theta = 0.5*torch.atan(torch.true_divide(2*gxx, gxx-gyy+self.eps)) # color gradient orientation
+        theta = 0.5*torch.atan(torch.div(2*gxx, gxx-gyy+self.eps)) # color gradient orientation
         G = (gxx + gyy) + (gxx - gyy)*torch.cos(2*theta) + 2*gxy*torch.sin(2*theta) # color gradient magnitude
         G[G < 0] = 0
         f = torch.sqrt(0.5*G)
