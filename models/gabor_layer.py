@@ -78,8 +78,8 @@ class gabor_layer(nn.Module):
         self.kernel_vertical = getGaborKernel(kernel_size, self.sigma, self.theta_v, self.lambd, self.gamma, self.psi)
         self.kernel_vertical_normalized = kernel_normalization(self.kernel_vertical)
 
-        self.kernel_weight_horizontal = self.kernel_horizontal_normalized.unsqueeze(0).unsqueeze(0).repeat(out_planes,1,1,1)
-        self.kernel_weight_vertical = self.kernel_vertical_normalized.unsqueeze(0).unsqueeze(0).repeat(out_planes,1,1,1)
+        self.kernel_weight_horizontal = Parameter(self.kernel_horizontal_normalized.unsqueeze(0).unsqueeze(0).repeat(out_planes,1,1,1))
+        self.kernel_weight_vertical = Parameter(self.kernel_vertical_normalized.unsqueeze(0).unsqueeze(0).repeat(out_planes,1,1,1))
 
     def forward(self, imgs):
         '''
