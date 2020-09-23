@@ -7,6 +7,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.transforms as transforms
 from torch.nn.parameter import Parameter
+from torch.nn import ParameterList
 import torch.optim as optim
 import cv2
 import numpy as np
@@ -64,35 +65,34 @@ class gabor_layer(nn.Module):
     def __init__(self, out_planes, kernel_size=3):
         super(gabor_layer, self).__init__()
         self.padding = (kernel_size-1)//2
+        self.out_planes = out_planes
         self.pi = torch.acos(torch.zeros(1)).item() * 2
-        self.conv2d_h = F.conv2d
-        self.conv2d_v = F.conv2d
-        self.sigma = Parameter(torch.Tensor([5.0]))
-        self.theta_h = torch.Tensor([0]) # no gradient
-        self.theta_v = torch.Tensor([self.pi/2]) # no gradient
-        self.lambd = Parameter(torch.Tensor([0.1]))
-        self.gamma = Parameter(torch.Tensor([1.0]))
-        self.psi = Parameter(torch.Tensor([0.0]))
-        self.kernel_horizontal = getGaborKernel(kernel_size, self.sigma, self.theta_h, self.lambd, self.gamma, self.psi)
-        self.kernel_horizontal_normalized = kernel_normalization(self.kernel_horizontal)
-        self.kernel_vertical = getGaborKernel(kernel_size, self.sigma, self.theta_v, self.lambd, self.gamma, self.psi)
-        self.kernel_vertical_normalized = kernel_normalization(self.kernel_vertical)
+        self.conv2d = F.conv2d
+        self.sigma = ParameterList([Parameter(torch.Tensor([5.0])) for i in range(out_planes)])
+        self.theta = ParameterList([Parameter(torch.Tensor([i/out_planes*self.pi]), requires_grad=False) for i in range(out_planes)]) # no gradient
+        self.lambd = ParameterList([Parameter(torch.Tensor([0.1])) for i in range(out_planes)])
+        self.gamma = ParameterList([Parameter(torch.Tensor([1.0])) for i in range(out_planes)])
+        self.psi = ParameterList([Parameter(torch.Tensor([0.0])) for i in range(out_planes)])
 
-        self.kernel_weight_horizontal = Parameter(self.kernel_horizontal_normalized.unsqueeze(0).unsqueeze(0).repeat(out_planes,1,1,1))
-        self.kernel_weight_vertical = Parameter(self.kernel_vertical_normalized.unsqueeze(0).unsqueeze(0).repeat(out_planes,1,1,1))
+        self.kernel = [getGaborKernel(kernel_size, self.sigma[i], self.theta[i], self.lambd[i], self.gamma[i], self.psi[i]) for i in range(out_planes)]
+        self.kernel_normalized = [kernel_normalization(self.kernel[i]) for i in range(out_planes)]
+
+        self.kernel_weight = self.kernel_normalized[0].unsqueeze(0).unsqueeze(0).repeat(out_planes,1,1,1) # (out_planes,1,H,W)
+        for i in range(1, self.out_planes):
+            self.kernel_weight[i] = self.kernel_normalized[i].unsqueeze(0) # (1,H,W)
+        self.kernel_weight = Parameter(self.kernel_weight) # (out_planes,1,H,W)
 
     def forward(self, imgs):
         '''
         imgs should be in channel order R,G,B - size [batch, 3, H, W]
         gray = 0.299 R + 0.587 G + 0.114 B
-        output imgs: size [batch, 1, H, W]
+        output imgs: size [batch, out_planes, H, W]
         '''
         imgs_gray = 0.299 * imgs[:,0:1,:,:] + 0.587 * imgs[:,1:2,:,:] + 0.114 * imgs[:,2:3,:,:]
         # Gabor convolution
-        imgs_h = self.conv2d_h(imgs_gray, self.kernel_weight_horizontal, stride=1, padding=self.padding)
-        imgs_v = self.conv2d_v(imgs_gray, self.kernel_weight_vertical, stride=1, padding=self.padding)
+        imgs = self.conv2d(imgs_gray, self.kernel_weight, stride=1, padding=self.padding)
 
-        return torch.sqrt(imgs_h**2 + imgs_v**2)
+        return imgs
 
 # unit testing
 if __name__ == '__main__':
@@ -101,22 +101,22 @@ if __name__ == '__main__':
     Height = 32
     Width = 64
     Channel = 3
+    out_planes = 20
     with torch.autograd.set_detect_anomaly(True):
         input_images = torch.randn(batch_size,Channel,Height,Width)
-        gabor = gabor_layer(1, kernel_size=3)
-        print("Parameters before back propagation:", gabor.sigma, gabor.theta_h, gabor.theta_v, gabor.lambd, gabor.gamma, gabor.psi)
+        gabor = gabor_layer(out_planes, kernel_size=3)
+        print(gabor.kernel_weight)
+        print("Parameters before back propagation:", gabor.sigma, gabor.theta, gabor.lambd, gabor.gamma, gabor.psi)
         input_filtered_images = gabor(input_images)
         print(input_filtered_images)
         print(input_filtered_images.shape)
         print(input_filtered_images.requires_grad)
         optimizer = optim.Adam(gabor.parameters(), lr=1.0)
-
         loss_total = torch.sum(input_filtered_images**2)
         optimizer.zero_grad()
         loss_total.backward()
         optimizer.step()
-        print("Parameters after back propagation:", gabor.sigma, gabor.theta_h, gabor.theta_v, gabor.lambd, gabor.gamma, gabor.psi)
-
+        print("Parameters after back propagation:", gabor.sigma, gabor.theta, gabor.lambd, gabor.gamma, gabor.psi)    
     # real input image
     test_image_path = '../misc/1_1.png'
     img = cv2.imread(test_image_path)
@@ -126,6 +126,6 @@ if __name__ == '__main__':
     imgs = imgs.permute(2,0,1)
     imgs = imgs.unsqueeze(0)
     imgs_filtered = gabor(imgs)
-    imgs_filtered_numpy = imgs_filtered[0,0,:,:].detach().numpy()
+    imgs_filtered_numpy = imgs_filtered[0,10,:,:].detach().numpy()
     plt.imshow(imgs_filtered_numpy, cmap='gray')
     plt.show()
