@@ -26,6 +26,7 @@ class TANet(nn.Module):
         self.gabor_layers = nn.Sequential(*[gabor_layer(theta_size, kernel_size=k) for k in kernel_sizes])
         #self.attention_layer = attention_layer(f_in, 1)
         self.alphas = ParameterList([Parameter((torch.Tensor([1.0/len(kernel_sizes)]))) for i in range(len(kernel_sizes))])
+        self.beta = Parameter(torch.Tensor([1.0]))
         self.kernel_sizes = kernel_sizes
         self.theta_size = theta_size
 
@@ -37,7 +38,7 @@ class TANet(nn.Module):
         for i in range(1, len(self.kernel_sizes)):
             img_gabor[0] += self.alphas[i]*img_gabor[i]
         # fusion
-        img_fusion = torch.cat((img_gabor[0], img_grad), dim=1)
+        img_fusion = torch.cat((img_gabor[0], self.beta*img_grad), dim=1)
 
         # resize
         feature_map = F.interpolate(img_fusion, size=(feature_map.shape[2],feature_map.shape[3]), mode='bilinear')
