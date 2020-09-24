@@ -68,11 +68,11 @@ class gabor_layer(nn.Module):
         self.out_planes = out_planes
         self.pi = torch.acos(torch.zeros(1)).item() * 2
         self.conv2d = F.conv2d
-        self.sigma = ParameterList([Parameter(torch.Tensor([5.0])) for i in range(out_planes)])
+        self.sigma = ParameterList([Parameter(nn.init.normal_(torch.Tensor([0.0]),5.0,1)) for i in range(out_planes)])
         self.theta = ParameterList([Parameter(torch.Tensor([i/out_planes*self.pi]), requires_grad=False) for i in range(out_planes)]) # no gradient
-        self.lambd = ParameterList([Parameter(torch.Tensor([0.1])) for i in range(out_planes)])
-        self.gamma = ParameterList([Parameter(torch.Tensor([1.0])) for i in range(out_planes)])
-        self.psi = ParameterList([Parameter(torch.Tensor([0.0])) for i in range(out_planes)])
+        self.lambd = ParameterList([Parameter(nn.init.normal_(torch.Tensor([0.0]),0.1,1)) for i in range(out_planes)])
+        self.gamma = ParameterList([Parameter(nn.init.normal_(torch.Tensor([0.0]),1.0,1)) for i in range(out_planes)])
+        self.psi = ParameterList([Parameter(nn.init.normal_(torch.Tensor([0.0]),0.0,1)) for i in range(out_planes)])
 
         self.kernel = [getGaborKernel(kernel_size, self.sigma[i], self.theta[i], self.lambd[i], self.gamma[i], self.psi[i]) for i in range(out_planes)]
         self.kernel_normalized = [kernel_normalization(self.kernel[i]) for i in range(out_planes)]
