@@ -8,9 +8,9 @@ import torch.nn.functional as F
 from torch.nn.parameter import Parameter
 from torch.nn import ParameterList
 import math
-from .gradient_layer import cgradient
-from .gabor_layer import gabor_layer
-from .attention_layer import attention_layer, attention_layer_light
+from gradient_layer import cgradient
+from gabor_layer import gabor_layer
+from attention_layer import attention_layer, attention_layer_light
 
 __all__ = ['Conv_BN_ReLU','TANet']
 
@@ -45,9 +45,8 @@ class TANet(nn.Module):
         self.gradient_layer = cgradient(C_in, kernel_size=3)
         self.gabor_layers = nn.Sequential(*[gabor_layer(theta_size, kernel_size=k) for k in kernel_sizes])
         #self.attention_layer = attention_layer(f_in, 1)
-        self.attention_layer_light = attention_layer_light(f_in)
-        self.reduce_layer1 = Conv_BN_ReLU(1+theta_size, 256, kernel_size=1, stride=2, padding=0)
-        self.reduce_layer2 = Conv_BN_ReLU(256, 512, kernel_size=1, stride=2, padding=0)
+        self.attention_layer_light = attention_layer_light(f_in+1+theta_size)
+        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         self.alphas = ParameterList([Parameter((torch.Tensor([1.0/len(kernel_sizes)]))) for i in range(len(kernel_sizes))])
         self.beta = Parameter(torch.Tensor([1.0]))
         self.kernel_sizes = kernel_sizes
@@ -63,12 +62,12 @@ class TANet(nn.Module):
         # fusion
         img_fusion = torch.cat((img_gabor[0], self.beta*img_grad), dim=1)
 
-        # downsample
-        img_fusion = self.reduce_layer1(img_fusion)
-        img_fusion = self.reduce_layer2(img_fusion)
+        # customized downsample layer
+        img_fusion = self.maxpool(img_fusion)
+        img_fusion = self.maxpool(img_fusion)
         
-        # add
-        img_fusion = feature_map + img_fusion
+        # concatenate
+        img_fusion = torch.cat((feature_map, img_fusion), dim=1)
 
         # attention
         #feature_map, att_map = self.attention_layer(feature_map, img_fusion)
