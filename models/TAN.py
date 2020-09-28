@@ -8,9 +8,9 @@ import torch.nn.functional as F
 from torch.nn.parameter import Parameter
 from torch.nn import ParameterList
 import math
-from gradient_layer import cgradient
-from gabor_layer import gabor_layer
-from attention_layer import attention_layer, attention_layer_light
+from .gradient_layer import cgradient
+from .gabor_layer import gabor_layer
+from .attention_layer import attention_layer, attention_layer_light
 
 __all__ = ['Conv_BN_ReLU','TANet']
 
