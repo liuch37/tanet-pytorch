@@ -33,6 +33,10 @@ class Conv_BN_ReLU(nn.Module):
     def forward(self, x):
         return self.relu(self.bn(self.conv(x)))
 
+def upsample(x, size, scale=1):
+    _, _, H, W = size
+    return F.interpolate(x, size=(int(H // scale), int(W // scale)), mode='bilinear')
+
 class TANet(nn.Module):
     def __init__(self, f_in, C_in, kernel_sizes=[3], theta_size=4):
         '''
@@ -62,10 +66,9 @@ class TANet(nn.Module):
         # fusion
         img_fusion = torch.cat((img_gabor[0], self.beta*img_grad), dim=1)
 
-        # customized downsample layer
-        img_fusion = self.maxpool(img_fusion)
-        img_fusion = self.maxpool(img_fusion)
-        
+        # downsample layer
+        img_fusion = upsample(img_fusion, feature_map.shape)
+
         # concatenate
         img_fusion = torch.cat((feature_map, img_fusion), dim=1)
 
